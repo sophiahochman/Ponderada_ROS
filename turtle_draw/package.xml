@@ -4,7 +4,7 @@
   <name>turtle_draw</name>
   <version>0.0.1</version>
   <description>Draws image contours in turtlesim using a custom CV pipeline.</description>
-  <maintainer email="">sophi</maintainer>
+  <maintainer email="sophi@gmail.com">sophi</maintainer>
   <license>MIT</license>
 
   <exec_depend>rclpy</exec_depend>

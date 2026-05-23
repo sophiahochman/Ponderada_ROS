@@ -2,6 +2,9 @@
 
 Reproduz os contornos de uma imagem no **turtlesim** usando uma pipeline de visão computacional implementada do zero (apenas NumPy + OpenCV só para leitura).
 
+# Link do vídeo de demonstração e imagem final
+https://drive.google.com/drive/folders/1XXi_lVJgvwF5qfsIKJ4e0VDTPvHafjPA?usp=sharing 
+
 ## Estrutura
 
 ```
