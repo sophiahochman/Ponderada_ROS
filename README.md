@@ -6,11 +6,10 @@ Reproduz os contornos de uma imagem no **turtlesim** usando uma pipeline de vis�
 
 ```
 turtle/
-├── process_image.py        # Pipeline de visão computacional
-├── path.json               # Gerado automaticamente pelo script acima
+├── turtle_draw.ipynb       # Notebook com a pipeline de processamento (gera `path.json`)
+├── path.json               # Resultado (lista de [x,y] ou null) — gerado pelo notebook
 ├── edges_result.png        # Visualização das etapas (gerada automaticamente)
-├── image/
-│   └── input.jpg           # ← coloque sua imagem aqui
+├── dog.jpeg                # Imagem de exemplo usada no notebook
 └── turtle_draw/            # Pacote ROS 2
     ├── package.xml
     ├── setup.py
@@ -33,16 +32,23 @@ pip install numpy opencv-python matplotlib
 
 ### 1. Gerar o caminho a partir da imagem
 
-Coloque a imagem em `image/input.jpg` (ou passe o caminho como argumento):
+O repositório inclui um notebook (`turtle_draw.ipynb`) que implementa a pipeline de visão e gera `path.json` (lista de pontos `[x,y]` e `null` entre segmentos).
+
+Opções para gerar o `path.json`:
+
+- Executar o notebook (`turtle_draw.ipynb`) localmente (recomendado): abra-o no Jupyter/VS Code e rode as células — o notebook usa `dog.jpeg` por exemplo e salva `path.json` e `edges_result.png`.
+- Se você tiver um script `process_image.py`, o comando típico seria:
 
 ```bash
 cd /caminho/para/turtle
 python3 process_image.py image/input.jpg
 ```
 
-Isso gera `path.json` e abre a visualização das etapas da pipeline.
+Ambas as opções produzem `path.json` no diretório do projeto.
 
 ### 2. Construir o pacote ROS 2
+
+Observação: os passos de build do ROS 2 devem ser executados em um ambiente compatível (Linux/WSL com ROS 2 instalado). Em Windows puro o procedimento difere; recomendamos usar WSL2/Ubuntu para simplicidade.
 
 ```bash
 # A partir do workspace ROS 2 (copie a pasta turtle_draw para o src/)
@@ -62,29 +68,29 @@ ros2 run turtlesim turtlesim_node
 ### 4. Rodar o nó de desenho
 
 ```bash
-# Terminal 2
+# Terminal 2 (no mesmo ambiente onde você rodou `source install/setup.bash`)
 ros2 run turtle_draw turtle_node --ros-args -p path_file:=/caminho/absoluto/para/path.json
 ```
 
-A tartaruga percorrerá automaticamente todos os contornos da imagem.
+A tartaruga percorrerá automaticamente todos os contornos descritos em `path.json`.
 
 ## Pipeline de Visão Computacional
 
-| Etapa | Método | Justificativa |
-|-------|--------|---------------|
-| Escala de cinza | Fórmula de luminância `Y = 0.114B + 0.587G + 0.299R` | Simula sensibilidade do olho humano |
-| Resize | Nearest-neighbor para 200×200 | Reduz pontos mantendo estrutura |
-| Suavização | Gaussiana 5×5, σ=1.4 | Remove ruído antes de derivar |
-| Gradientes | Operador de Sobel (Gx, Gy) | Aproxima derivada discreta da imagem |
-| Afinar bordas | Supressão de não-máximos | Deixa bordas com 1 pixel de espessura |
-| Limiares | Limiar duplo (5% / 15% do máximo) | Diferencia bordas fortes de fracas |
-| Histerese | Conectividade 8-vizinhos | Elimina bordas falsas isoladas |
-| Caminho | Greedy nearest-neighbor | Minimiza saltos entre pontos de borda |
+| Etapa           | Método                                               | Justificativa                         |
+| --------------- | ---------------------------------------------------- | ------------------------------------- |
+| Escala de cinza | Fórmula de luminância `Y = 0.114B + 0.587G + 0.299R` | Simula sensibilidade do olho humano   |
+| Resize          | Nearest-neighbor para 200×200                        | Reduz pontos mantendo estrutura       |
+| Suavização      | Gaussiana 5×5, σ=1.4                                 | Remove ruído antes de derivar         |
+| Gradientes      | Operador de Sobel (Gx, Gy)                           | Aproxima derivada discreta da imagem  |
+| Afinar bordas   | Supressão de não-máximos                             | Deixa bordas com 1 pixel de espessura |
+| Limiares        | Limiar duplo (5% / 15% do máximo)                    | Diferencia bordas fortes de fracas    |
+| Histerese       | Conectividade 8-vizinhos                             | Elimina bordas falsas isoladas        |
+| Caminho         | Greedy nearest-neighbor                              | Minimiza saltos entre pontos de borda |
 
 ## Controle ROS 2
 
-- **`/turtle1/teleport_absolute`** — posiciona a tartaruga com precisão (x, y, θ).  
-- **`/turtle1/set_pen`** — levanta (`off=1`) ou abaixa (`off=0`) a caneta.  
+- **`/turtle1/teleport_absolute`** — posiciona a tartaruga com precisão (x, y, θ).
+- **`/turtle1/set_pen`** — levanta (`off=1`) ou abaixa (`off=0`) a caneta.
 - Quando o caminho contém `null` (None), a caneta é levantada e a tartaruga salta para o próximo segmento de contorno.
 
 ---
@@ -164,4 +170,3 @@ O caminho é fornecido via arquivo `path.json` (gerado pela etapa anterior), pas
 - **Performance da convolução**: A convolução pixel a pixel é inviável em Python puro para imagens grandes. Resolvi iterando sobre o kernel (25 operações matriciais) em vez de cada pixel, reduzindo drasticamente o tempo.
 - **Ordenação do caminho**: O greedy nearest-neighbor em O(n²) é lento para muitos pontos. Reduzir a imagem para 200×200 manteve o número de pontos abaixo de ~2000, tornando a ordenação aceitável (~2s).
 - **Histerese com loops**: A histerese exige iterar pixel a pixel; para 200×200 isso representa 40.000 iterações Python — aceitável mas lento (alguns segundos). Uma solução seria usar morfologia com NumPy, mas fugiria da implementação manual.
-

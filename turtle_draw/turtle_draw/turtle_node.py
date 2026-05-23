@@ -1,14 +1,3 @@
-"""
-turtle_node.py
-Nó ROS 2 que lê o arquivo path.json gerado por process_image.py
-e comanda a tartaruga do turtlesim para reproduzir os contornos da imagem.
-
-Estratégia de controle:
-- Usa o serviço /turtle1/teleport_absolute para posicionar a tartaruga com precisão.
-- Usa o serviço /turtle1/set_pen para controlar se a caneta está abaixada (desenhando)
-  ou levantada (movendo sem desenhar).
-- Quando o caminho contém None, levanta a caneta para mover para o próximo segmento.
-"""
 
 import json
 import os
@@ -28,16 +17,6 @@ DEFAULT_PATH_FILE = os.path.join(
 
 
 class TurtleDrawNode(Node):
-    """
-    Nó responsável por desenhar os contornos da imagem no turtlesim.
-
-    Fluxo:
-      1. Carrega o caminho do arquivo JSON.
-      2. Limpa a tela do turtlesim.
-      3. Percorre cada ponto do caminho:
-         - None → levanta a caneta e teleporta para o próximo ponto.
-         - (x, y) → teleporta com a caneta abaixada.
-    """
 
     def __init__(self):
         super().__init__('turtle_draw_node')
@@ -72,9 +51,6 @@ class TurtleDrawNode(Node):
         self._drawing_done = False
         threading.Thread(target=self._start_drawing, daemon=True).start()
 
-    # ─────────────────────────────────────────────────────────
-    # Métodos auxiliares
-    # ─────────────────────────────────────────────────────────
 
     def _load_path(self, path_file: str) -> list:
         """Lê o JSON e converte para lista de tuplas ou None."""
@@ -88,11 +64,9 @@ class TurtleDrawNode(Node):
             return []
 
     def _wait_for_future(self, future, timeout_sec=5.0):
-        """Aguarda um futuro de forma segura fora do executor principal."""
         rclpy.spin_until_future_complete(self, future, timeout_sec=timeout_sec)
 
     def _clear_screen(self):
-        """Chama o serviço /clear para limpar o canvas."""
         req = Empty.Request()
         future = self.clear_client.call_async(req)
         self._wait_for_future(future)
@@ -107,11 +81,7 @@ class TurtleDrawNode(Node):
         self._wait_for_future(future)
 
     def _set_pen(self, r: int, g: int, b: int, width: int, off: int):
-        """
-        Controla a caneta da tartaruga.
-        off=1 → caneta levantada (sem traço)
-        off=0 → caneta abaixada (desenhando)
-        """
+        
         req = SetPen.Request()
         req.r = r
         req.g = g
@@ -121,12 +91,8 @@ class TurtleDrawNode(Node):
         future = self.pen_client.call_async(req)
         self._wait_for_future(future)
 
-    # ─────────────────────────────────────────────────────────
-    # Lógica de desenho
-    # ─────────────────────────────────────────────────────────
 
     def _start_drawing(self):
-        """Chamado uma vez pelo timer para iniciar o percurso."""
         if self._drawing_done:
             return
         self._drawing_done = True
@@ -163,9 +129,6 @@ class TurtleDrawNode(Node):
         self.get_logger().info("Desenho concluído!")
 
 
-# ─────────────────────────────────────────────────────────────
-# Entry point
-# ─────────────────────────────────────────────────────────────
 
 def main(args=None):
     rclpy.init(args=args)
