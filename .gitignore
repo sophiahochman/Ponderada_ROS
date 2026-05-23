@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+*.egg
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ROS 2 build artifacts
+build/
+install/
+log/
+
+# Gerados pelo pipeline
+path.json
+edges_result.png
+
+# Outros
+.DS_Store
+*.log
